@@ -1,5 +1,6 @@
 import { Filter, Plus, RefreshCw, Search, TrendingDown, TrendingUp } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useRealTimeStocks, useMarketStatus } from '../hooks/useStocksNew';
 
 // Types
 interface StockPrice {
@@ -12,15 +13,38 @@ interface StockPrice {
   market_cap?: number;
   market: 'US' | 'SA';
   sector?: string;
+  timestamp?: Date;
+  is_real_time?: boolean;
 }
 
 const StocksPage: React.FC = () => {
-  const [stocks, setStocks] = useState<StockPrice[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Real-time stock data - implements PRD-2025-06-29-real-time-stock-data.md
+  const { 
+    data: stocks = [], 
+    isLoading: loading, 
+    refetch: refreshStocks,
+    forceRefresh,
+    lastUpdated 
+  } = useRealTimeStocks();
+  
+  const { data: marketStatus, isMarketOpen } = useMarketStatus();
+  
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterMarket, setFilterMarket] = useState<'ALL' | 'US' | 'SA'>('ALL');
   const [sortBy, setSortBy] = useState<'symbol' | 'price' | 'change'>('symbol');
+
+  // Real-time refresh with user feedback
+  const refreshPrices = async () => {
+    setRefreshing(true);
+    try {
+      await forceRefresh();
+    } catch (error) {
+      console.error('Failed to refresh stock prices:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // البيانات التجريبية
   const mockStocks: StockPrice[] = [

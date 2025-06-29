@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 // Types
 export interface StockPrice {
@@ -11,43 +12,96 @@ export interface StockPrice {
   market_cap?: number;
   market: 'US' | 'SA';
   sector?: string;
+  timestamp?: Date;
+  is_real_time?: boolean;
   last_updated?: string;
 }
 
-export interface StockSearchParams {
-  symbol?: string;
-  market?: 'US' | 'SA';
-  sector?: string;
+interface MarketStatus {
+  market: 'US' | 'SA';
+  is_open: boolean;
+  status: 'OPEN' | 'CLOSED' | 'PRE_MARKET' | 'AFTER_HOURS';
+  current_time: Date;
+  next_open: Date | null;
+  next_close: Date | null;
+  timezone: string;
 }
 
-// API functions
-const fetchStockPrice = async (symbol: string): Promise<StockPrice> => {
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  error?: string;
+  message?: string;
+}
+
+// API client functions
+async function fetchRealTimeStocks(symbols?: string[]): Promise<StockPrice[]> {
+  const baseUrl = process.env.NODE_ENV === 'development' 
+    ? 'http://localhost:3005' 
+    : '';
+  
+  const url = symbols?.length 
+    ? `${baseUrl}/api/stocks/real-time?symbols=${symbols.join(',')}`
+    : `${baseUrl}/api/stocks/real-time`;
+  
   try {
-    const response = await fetch(`/api/stocks/price?symbol=${symbol}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
+    const response = await fetch(url);
+    
     if (!response.ok) {
-      throw new Error(`فشل في جلب سعر السهم ${symbol}`);
+      throw new Error(`Failed to fetch stocks: ${response.status}`);
     }
-
-    const result = await response.json();
+    
+    const result: ApiResponse<StockPrice[]> = await response.json();
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to fetch stock data');
+    }
+    
     return result.data;
   } catch (error) {
-    console.error(`خطأ في جلب سعر السهم ${symbol}:`, error);
-    throw error;
-  }
-};
-
-const fetchWatchlist = async (): Promise<StockPrice[]> => {
-  try {
-    // في المستقبل سيكون هناك API للحصول على قائمة المتابعة من المستخدم
-    // الآن نعيد بيانات تجريبية
+    console.error('Error fetching real-time stocks:', error);
+    // Fallback to mock data if API fails
     return getMockWatchlist();
+  }
+}
+
+async function fetchMarketStatus(market?: 'US' | 'SA'): Promise<MarketStatus | Record<string, MarketStatus>> {
+  const baseUrl = process.env.NODE_ENV === 'development' 
+    ? 'http://localhost:3005' 
+    : '';
+  
+  const url = market 
+    ? `${baseUrl}/api/market/status?market=${market}`
+    : `${baseUrl}/api/market/status`;
+  
+  try {
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch market status: ${response.status}`);
+    }
+    
+    const result: ApiResponse<MarketStatus | Record<string, MarketStatus>> = await response.json();
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to fetch market status');
+    }
+    
+    return result.data;
   } catch (error) {
+    console.error('Error fetching market status:', error);
+    // Fallback to default status
+    return {
+      market: market || 'US',
+      is_open: false,
+      status: 'CLOSED',
+      current_time: new Date(),
+      next_open: null,
+      next_close: null,
+      timezone: market === 'SA' ? 'Asia/Riyadh' : 'America/New_York'
+    } as MarketStatus;
+  }
+}
     console.error('خطأ في جلب قائمة المتابعة:', error);
     return getMockWatchlist();
   }
