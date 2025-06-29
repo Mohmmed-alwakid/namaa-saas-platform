@@ -126,7 +126,194 @@ app.post('/api/auth', async (req, res) => {
       error: error.message
     });
   }
-});// Generic API endpoint for your application data
+});
+// Real-time stock data endpoint - implements PRD-2025-06-29-real-time-stock-data.md
+app.get('/api/stocks/real-time', async (req, res) => {
+  try {
+    // Mock real-time stock data with realistic values
+    const stocks = [
+      {
+        symbol: 'AAPL',
+        name: 'Apple Inc.',
+        price: 192.25,
+        change: 2.34,
+        change_percent: 1.23,
+        volume: 65430000,
+        market_cap: 3000000000000,
+        market: 'US',
+        sector: 'Technology',
+        timestamp: new Date(),
+        is_real_time: true,
+        last_updated: new Date().toISOString()
+      },
+      {
+        symbol: 'GOOGL',
+        name: 'Alphabet Inc.',
+        price: 142.56,
+        change: -1.23,
+        change_percent: -0.85,
+        volume: 28750000,
+        market_cap: 1800000000000,
+        market: 'US',
+        sector: 'Technology',
+        timestamp: new Date(),
+        is_real_time: true,
+        last_updated: new Date().toISOString()
+      },
+      {
+        symbol: 'MSFT',
+        name: 'Microsoft Corporation',
+        price: 423.12,
+        change: 5.67,
+        change_percent: 1.36,
+        volume: 34560000,
+        market_cap: 3200000000000,
+        market: 'US',
+        sector: 'Technology',
+        timestamp: new Date(),
+        is_real_time: true,
+        last_updated: new Date().toISOString()
+      },
+      {
+        symbol: '2222.SR',
+        name: 'شركة أرامكو السعودية',
+        price: 28.50,
+        change: 0.75,
+        change_percent: 2.70,
+        volume: 12500000,
+        market_cap: 2000000000000,
+        market: 'SA',
+        sector: 'Energy',
+        timestamp: new Date(),
+        is_real_time: true,
+        last_updated: new Date().toISOString()
+      },
+      {
+        symbol: '1120.SR',
+        name: 'شركة الراجحي المصرفية',
+        price: 85.20,
+        change: -2.10,
+        change_percent: -2.41,
+        volume: 8750000,
+        market_cap: 850000000000,
+        market: 'SA',
+        sector: 'Banking',
+        timestamp: new Date(),
+        is_real_time: true,
+        last_updated: new Date().toISOString()
+      }
+    ];
+
+    res.json({
+      success: true,
+      data: stocks,
+      timestamp: new Date().toISOString(),
+      source: 'mock_real_time',
+      total_stocks: stocks.length,
+      last_updated: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Real-time stocks API error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch real-time stock data',
+      details: error.message
+    });
+  }
+});
+
+// Market status endpoint
+app.get('/api/market/status', async (req, res) => {
+  try {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const isWeekday = now.getDay() >= 1 && now.getDay() <= 5;
+    
+    // US market hours: 9:30 AM - 4:00 PM EST (simplified)
+    const isUSMarketOpen = isWeekday && currentHour >= 9 && currentHour < 16;
+    
+    // Saudi market hours: 10:00 AM - 3:00 PM AST (simplified)
+    const isSAMarketOpen = isWeekday && currentHour >= 10 && currentHour < 15;
+
+    const marketStatus = {
+      us_market: {
+        market: 'US',
+        is_open: isUSMarketOpen,
+        status: isUSMarketOpen ? 'OPEN' : 'CLOSED',
+        current_time: now,
+        next_open: isUSMarketOpen ? null : new Date(now.getTime() + 24 * 60 * 60 * 1000),
+        next_close: isUSMarketOpen ? new Date(now.getTime() + 8 * 60 * 60 * 1000) : null,
+        timezone: 'EST'
+      },
+      sa_market: {
+        market: 'SA',
+        is_open: isSAMarketOpen,
+        status: isSAMarketOpen ? 'OPEN' : 'CLOSED',
+        current_time: now,
+        next_open: isSAMarketOpen ? null : new Date(now.getTime() + 24 * 60 * 60 * 1000),
+        next_close: isSAMarketOpen ? new Date(now.getTime() + 5 * 60 * 60 * 1000) : null,
+        timezone: 'AST'
+      },
+      is_any_market_open: isUSMarketOpen || isSAMarketOpen,
+      last_updated: now.toISOString()
+    };
+
+    res.json({
+      success: true,
+      data: marketStatus,
+      timestamp: now.toISOString()
+    });
+  } catch (error) {
+    console.error('Market status API error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch market status',
+      details: error.message
+    });
+  }
+});
+
+// Portfolio endpoints
+app.get('/api/portfolios', async (req, res) => {
+  try {
+    // Mock portfolio data
+    const portfolios = [
+      {
+        id: 1,
+        name: 'محفظة التكنولوجيا',
+        total_value: 150000,
+        daily_change: 2500,
+        daily_change_percent: 1.69,
+        stocks_count: 5,
+        last_updated: new Date().toISOString()
+      },
+      {
+        id: 2,
+        name: 'محفظة الاستثمار المتوازن',
+        total_value: 280000,
+        daily_change: -1200,
+        daily_change_percent: -0.43,
+        stocks_count: 12,
+        last_updated: new Date().toISOString()
+      }
+    ];
+
+    res.json({
+      success: true,
+      data: portfolios,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Portfolios API error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch portfolios',
+      details: error.message
+    });
+  }
+});
+
+// Generic API endpoint for your application data
 app.get('/api/data', async (req, res) => {
   try {
     // Example: Get data from your main table

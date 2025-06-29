@@ -2,27 +2,11 @@ import { Filter, Plus, RefreshCw, Search, TrendingDown, TrendingUp } from 'lucid
 import React, { useState } from 'react';
 import { useRealTimeStocks, useMarketStatus } from '../hooks/useStocksNew';
 
-// Types
-interface StockPrice {
-  symbol: string;
-  name: string;
-  price: number;
-  change: number;
-  change_percent: number;
-  volume?: number;
-  market_cap?: number;
-  market: 'US' | 'SA';
-  sector?: string;
-  timestamp?: Date;
-  is_real_time?: boolean;
-}
-
 const StocksPage: React.FC = () => {
   // Real-time stock data - implements PRD-2025-06-29-real-time-stock-data.md
   const { 
     data: stocks = [], 
     isLoading: loading, 
-    refetch: refreshStocks,
     forceRefresh,
     lastUpdated 
   } = useRealTimeStocks();
@@ -44,123 +28,6 @@ const StocksPage: React.FC = () => {
     } finally {
       setRefreshing(false);
     }
-  };
-
-  // البيانات التجريبية
-  const mockStocks: StockPrice[] = [
-    {
-      symbol: 'AAPL',
-      name: 'Apple Inc.',
-      price: 185.25,
-      change: 2.15,
-      change_percent: 1.17,
-      volume: 45234567,
-      market_cap: 2.85e12,
-      market: 'US',
-      sector: 'Technology'
-    },
-    {
-      symbol: 'MSFT',
-      name: 'Microsoft Corporation',
-      price: 338.50,
-      change: -1.25,
-      change_percent: -0.37,
-      volume: 32145678,
-      market_cap: 2.52e12,
-      market: 'US',
-      sector: 'Technology'
-    },
-    {
-      symbol: 'GOOGL',
-      name: 'Alphabet Inc.',
-      price: 142.80,
-      change: 3.45,
-      change_percent: 2.47,
-      volume: 28456789,
-      market_cap: 1.78e12,
-      market: 'US',
-      sector: 'Technology'
-    },
-    {
-      symbol: 'TSLA',
-      name: 'Tesla Inc.',
-      price: 248.30,
-      change: -5.67,
-      change_percent: -2.23,
-      volume: 67890123,
-      market_cap: 7.89e11,
-      market: 'US',
-      sector: 'Automotive'
-    },
-    {
-      symbol: '2222.SR',
-      name: 'أرامكو السعودية',
-      price: 27.85,
-      change: 0.45,
-      change_percent: 1.64,
-      volume: 12345678,
-      market_cap: 2.1e12,
-      market: 'SA',
-      sector: 'Energy'
-    },
-    {
-      symbol: '1120.SR',
-      name: 'مصرف الراجحي',
-      price: 85.20,
-      change: -0.60,
-      change_percent: -0.70,
-      volume: 8765432,
-      market_cap: 1.28e11,
-      market: 'SA',
-      sector: 'Banking'
-    },
-    {
-      symbol: '2380.SR',
-      name: 'الشركة السعودية للكهرباء',
-      price: 18.45,
-      change: 0.25,
-      change_percent: 1.37,
-      volume: 5432167,
-      market_cap: 9.23e10,
-      market: 'SA',
-      sector: 'Utilities'
-    },
-    {
-      symbol: '7010.SR',
-      name: 'مصرف الإنماء',
-      price: 55.70,
-      change: 1.20,
-      change_percent: 2.20,
-      volume: 3456789,
-      market_cap: 8.9e10,
-      market: 'SA',
-      sector: 'Banking'
-    }
-  ];
-
-  useEffect(() => {
-    const loadStocks = async () => {
-      setLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setStocks(mockStocks);
-      setLoading(false);
-    };
-
-    loadStocks();
-  }, []);
-
-  const refreshPrices = async () => {
-    setRefreshing(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    // محاكاة تحديث الأسعار
-    const updatedStocks = stocks.map(stock => ({
-      ...stock,
-      price: stock.price + (Math.random() - 0.5) * 2,
-      change: (Math.random() - 0.5) * 5,
-      change_percent: (Math.random() - 0.5) * 3
-    }));
-    setStocks(updatedStocks);
-    setRefreshing(false);
   };
 
   // تصفية وترتيب الأسهم
@@ -210,10 +77,58 @@ const StocksPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
       <div className="container-center py-8">
+        {/* Market Status Banner */}
+        {marketStatus && (
+          <div className={`mb-6 p-4 rounded-lg ${
+            isMarketOpen 
+              ? 'bg-green-50 border border-green-200' 
+              : 'bg-gray-50 border border-gray-200'
+          }`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`w-3 h-3 rounded-full ${
+                  isMarketOpen ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
+                }`}></div>
+                <span className="font-medium text-gray-900">
+                  {isMarketOpen ? 'الأسواق مفتوحة الآن' : 'الأسواق مغلقة'}
+                </span>
+                <span className={`px-2 py-1 text-xs rounded-full ${
+                  isMarketOpen 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-gray-100 text-gray-600'
+                }`}>
+                  مباشر
+                </span>
+              </div>
+              {lastUpdated && (
+                <div className="text-sm text-gray-600">
+                  آخر تحديث: {new Date(lastUpdated).toLocaleTimeString('ar-SA')}
+                </div>
+              )}
+            </div>
+            {marketStatus?.next_open && !isMarketOpen && (
+              <div className="mt-2 text-sm text-gray-600">
+                موعد الافتتاح القادم: {typeof marketStatus.next_open === 'string' 
+                  ? new Date(marketStatus.next_open).toLocaleString('ar-SA')
+                  : marketStatus.next_open.toLocaleString('ar-SA')
+                }
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Page Header */}
         <div className="mb-8 flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">أسعار الأسهم</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-bold text-gray-900">أسعار الأسهم</h1>
+              {isMarketOpen && (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 animate-pulse">
+                  <span className="w-2 h-2 bg-red-500 rounded-full mr-1"></span>
+                  مباشر
+                </span>
+              )}
+            </div>
             <p className="mt-2 text-gray-600">متابعة أسعار الأسهم الأمريكية والسعودية</p>
           </div>
           <div className="flex gap-3">
@@ -292,14 +207,27 @@ const StocksPage: React.FC = () => {
                 {filteredAndSortedStocks.map((stock) => (
                   <tr key={stock.symbol} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-3 px-4 font-medium text-gray-900">
-                      {stock.symbol}
+                      <div className="flex items-center gap-2">
+                        {stock.symbol}
+                        {stock.is_real_time && isMarketOpen && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                            <span className="w-1.5 h-1.5 bg-red-500 rounded-full mr-1 animate-pulse"></span>
+                            مباشر
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3 px-4">
                       <div>
                         <div className="font-medium text-gray-900">{stock.name}</div>
-                        {stock.sector && (
-                          <div className="text-sm text-gray-500">{stock.sector}</div>
-                        )}
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                          {stock.sector && <span>{stock.sector}</span>}
+                          {stock.timestamp && (
+                            <span className="text-xs">
+                              • آخر تحديث: {new Date(stock.timestamp).toLocaleTimeString('ar-SA')}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td className="py-3 px-4 font-medium">
