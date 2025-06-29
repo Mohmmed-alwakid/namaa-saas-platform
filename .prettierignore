@@ -1,0 +1,10 @@
+node_modules
+dist
+build
+.vercel
+.env
+.env.local
+.env.production
+*.log
+coverage
+.nyc_output

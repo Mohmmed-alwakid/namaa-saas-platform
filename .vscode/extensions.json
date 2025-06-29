@@ -1,0 +1,16 @@
+{
+  "recommendations": [
+    "ms-vscode.vscode-typescript-next",
+    "bradlc.vscode-tailwindcss",
+    "esbenp.prettier-vscode",
+    "ms-vscode.vscode-eslint",
+    "formulahendry.auto-rename-tag",
+    "christian-kohler.path-intellisense",
+    "ms-vscode.vscode-json",
+    "GitHub.copilot",
+    "GitHub.copilot-chat",
+    "ms-playwright.playwright",
+    "supabase.supabase-vscode",
+    "vercel.vercel-vscode"
+  ]
+}

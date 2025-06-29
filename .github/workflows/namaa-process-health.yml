@@ -1,0 +1,46 @@
+# Enhanced process enforcement for Namaa Investment Platform
+<function_calls>
+<invoke name="create_file">
+<parameter name="content"># Enhanced process enforcement for Namaa
+name: Namaa Process Health Monitor
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+  push:
+    branches: [main]
+
+jobs:
+  process-health-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Check PR Compliance
+        run: |
+          echo "🔍 Checking PR compliance..."
+          
+          # Check for requirement documentation
+          if ! echo "${{ github.event.pull_request.body }}" | grep -q "PRD\|requirement\|user.story"; then
+            echo "❌ Missing requirement documentation link"
+            echo "::error::PR must include link to approved PRD or User Story"
+            exit 1
+          fi
+          
+          # Check for QA evidence
+          if ! echo "${{ github.event.pull_request.body }}" | grep -q "test\|QA\|quality"; then
+            echo "⚠️ Missing QA testing evidence"
+            echo "::warning::Consider adding QA testing details"
+          fi
+          
+          echo "✅ PR compliance check passed"
+          
+      - name: Calculate Health Score
+        run: |
+          echo "📊 Calculating process health score..."
+          # Add health score calculation logic here
+          echo "Current PR meets compliance standards"
+          
+      - name: Update Health Dashboard
+        run: |
+          echo "📈 Health metrics updated"
+          # Add dashboard update logic

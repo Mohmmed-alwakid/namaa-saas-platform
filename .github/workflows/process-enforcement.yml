@@ -1,0 +1,217 @@
+name: 🔒 Process Enforcement
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+jobs:
+  enforce-process:
+    name: Enforce Product Management Process
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Check PR Requirements
+        id: check-requirements
+        run: |
+          # Extract PR body
+          PR_BODY="${{ github.event.pull_request.body }}"
+          
+          # Initialize check results
+          CHECKS_PASSED=true
+          MISSING_ITEMS=""
+          
+          # Check for requirement documentation
+          if [[ ! "$PR_BODY" =~ "Link to approved PRD:" ]] || [[ "$PR_BODY" =~ "Link to approved PRD: \[Link to requirements document\]" ]]; then
+            CHECKS_PASSED=false
+            MISSING_ITEMS="$MISSING_ITEMS\n- ❌ Missing link to approved PRD"
+          fi
+          
+          if [[ ! "$PR_BODY" =~ "Link to User Story:" ]] || [[ "$PR_BODY" =~ "Link to User Story: \[Link to user story with acceptance criteria\]" ]]; then
+            CHECKS_PASSED=false
+            MISSING_ITEMS="$MISSING_ITEMS\n- ❌ Missing link to User Story"
+          fi
+          
+          # Check for quality gates
+          if [[ ! "$PR_BODY" =~ "- \[x\] \*\*Code Review\*\*" ]]; then
+            CHECKS_PASSED=false
+            MISSING_ITEMS="$MISSING_ITEMS\n- ❌ Code review not completed"
+          fi
+          
+          if [[ ! "$PR_BODY" =~ "- \[x\] \*\*Unit Tests\*\*" ]]; then
+            CHECKS_PASSED=false
+            MISSING_ITEMS="$MISSING_ITEMS\n- ❌ Unit tests not completed"
+          fi
+          
+          # Set outputs
+          echo "checks_passed=$CHECKS_PASSED" >> $GITHUB_OUTPUT
+          echo "missing_items<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$MISSING_ITEMS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        
+      - name: Comment on PR if checks fail
+        if: steps.check-requirements.outputs.checks_passed == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const missingItems = `${{ steps.check-requirements.outputs.missing_items }}`;
+            
+            const comment = `## 🚨 Process Enforcement Check Failed
+            
+            **This PR cannot be merged until all process requirements are met.**
+            
+            ### Missing Requirements:
+            ${missingItems}
+            
+            ### Next Steps:
+            1. Complete all missing items in the PR description
+            2. Ensure all checkboxes are properly marked with [x]
+            3. Push new commit to trigger re-check
+            
+            ### Need Help?
+            - 📖 [Product Management Process](../product-management/README.md)
+            - 📝 [Change Request Template](../product-management/change-requests/TEMPLATE.md)
+            - 🎯 [User Story Guide](../product-management/user-stories/)
+            
+            **This comment will be updated automatically when requirements are met.**`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+            
+      - name: Set PR status
+        if: steps.check-requirements.outputs.checks_passed == 'false'
+        run: |
+          echo "Process enforcement check failed"
+          exit 1
+          
+      - name: Success comment
+        if: steps.check-requirements.outputs.checks_passed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comment = `## ✅ Process Enforcement Check Passed
+            
+            **All product management requirements have been met!**
+            
+            This PR is now eligible for:
+            - Technical Lead review
+            - Product Manager approval  
+            - QA verification
+            
+            **Next Steps**: Await required approvals before merging.`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+            
+  check-approvals:
+    name: Check Required Approvals
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.state == 'open'
+    
+    steps:
+      - name: Check for required approvals
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Get PR reviews
+            const reviews = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            
+            // Define required reviewers (should be configured in repository settings)
+            const requiredReviewers = {
+              'product-manager': false,
+              'tech-lead': false,
+              'qa-lead': false
+            };
+            
+            // Check for approvals
+            reviews.data.forEach(review => {
+              if (review.state === 'APPROVED') {
+                // Map GitHub usernames to roles (configure these)
+                const roleMapping = {
+                  'product-manager-username': 'product-manager',
+                  'tech-lead-username': 'tech-lead', 
+                  'qa-lead-username': 'qa-lead'
+                };
+                
+                const role = roleMapping[review.user.login];
+                if (role) {
+                  requiredReviewers[role] = true;
+                }
+              }
+            });
+            
+            // Check if all required approvals are received
+            const allApproved = Object.values(requiredReviewers).every(approved => approved);
+            
+            if (!allApproved) {
+              const missingApprovals = Object.entries(requiredReviewers)
+                .filter(([role, approved]) => !approved)
+                .map(([role]) => role);
+                
+              core.setFailed(`Missing required approvals: ${missingApprovals.join(', ')}`);
+            }
+            
+  quality-gates:
+    name: Quality Gates Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run TypeScript check
+        run: npm run type-check
+        
+      - name: Run linting
+        run: npm run lint
+        
+      - name: Run unit tests with coverage
+        run: npm run test:coverage
+        
+      - name: Check test coverage
+        run: |
+          # Extract coverage percentage
+          COVERAGE=$(npm run test:coverage 2>&1 | grep "All files" | awk '{print $4}' | sed 's/%//')
+          
+          if [ "$COVERAGE" -lt 80 ]; then
+            echo "❌ Test coverage is $COVERAGE%, minimum required is 80%"
+            exit 1
+          else
+            echo "✅ Test coverage is $COVERAGE%, meets requirement"
+          fi
+          
+      - name: Build project
+        run: npm run build
+        
+      - name: Performance budget check
+        run: |
+          # Check bundle sizes (customize thresholds as needed)
+          if [ -d "dist" ]; then
+            BUNDLE_SIZE=$(du -sh dist | awk '{print $1}')
+            echo "Bundle size: $BUNDLE_SIZE"
+            
+            # Add specific size checks here
+            # Example: Check if main bundle is under 500KB
+          fi
