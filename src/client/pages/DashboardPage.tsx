@@ -1,7 +1,7 @@
 import { BarChart3, DollarSign, Eye, Plus, RefreshCw, TrendingDown, TrendingUp } from 'lucide-react';
 import React from 'react';
 import { formatCurrency, usePortfolioCalculations, usePortfolios } from '../hooks/usePortfolio';
-import { useWatchlist } from '../hooks/useStocks';
+import { useWatchlist } from '../hooks/useStocksNew';
 
 const DashboardPage: React.FC = () => {
   const { data: portfolios = [], isLoading: portfoliosLoading, refetch: refetchPortfolios } = usePortfolios();

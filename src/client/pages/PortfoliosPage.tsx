@@ -19,35 +19,28 @@ interface Portfolio {
   };
 }
 
-const PortfoliosPage: React.FC = () => {
-  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState<'ALL' | 'REAL' | 'PAPER'>('ALL');
-  const [showCreateModal, setShowCreateModal] = useState(false);
-
-  // البيانات التجريبية
-  const mockPortfolios: Portfolio[] = [
-    {
-      id: '1',
-      name: 'المحفظة الرئيسية',
-      description: 'استثمارات طويلة المدى في أسهم مختارة',
-      initial_investment: 100000,
-      currency: 'SAR',
-      portfolio_type: 'REAL',
-      created_at: '2024-01-15T10:30:00Z',
-      stats: {
-        transactions_count: 15,
-        stocks_count: 8,
-        current_value: 125500,
-        total_return: 25500,
-        daily_change: 1250
-      }
-    },
-    {
-      id: '2', 
-      name: 'محفظة النمو',
-      description: 'أسهم تقنية عالية النمو',
+// البيانات التجريبية - moved outside component to avoid dependency issues
+const mockPortfolios: Portfolio[] = [
+  {
+    id: '1',
+    name: 'المحفظة الرئيسية',
+    description: 'استثمارات طويلة المدى في أسهم مختارة',
+    initial_investment: 100000,
+    currency: 'SAR',
+    portfolio_type: 'REAL',
+    created_at: '2024-01-15T10:30:00Z',
+    stats: {
+      transactions_count: 15,
+      stocks_count: 8,
+      current_value: 125500,
+      total_return: 25500,
+      daily_change: 1250
+    }
+  },
+  {
+    id: '2', 
+    name: 'محفظة النمو',
+    description: 'أسهم تقنية عالية النمو',
       initial_investment: 50000,
       currency: 'USD',
       portfolio_type: 'REAL',
@@ -93,6 +86,13 @@ const PortfoliosPage: React.FC = () => {
       }
     }
   ];
+
+const PortfoliosPage: React.FC = () => {
+  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState<'ALL' | 'REAL' | 'PAPER'>('ALL');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   useEffect(() => {
     const loadPortfolios = async () => {

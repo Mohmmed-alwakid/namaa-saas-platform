@@ -145,7 +145,7 @@ function getSaudiMarketStatus(): MarketStatus {
     } else {
       // Next trading day
       let nextDay = riyadhTime.getDate() + 1;
-      let nextDayOfWeek = (day + 1) % 7;
+      const nextDayOfWeek = (day + 1) % 7;
       
       // Skip Friday and Saturday
       if (nextDayOfWeek === 5) {

@@ -23,7 +23,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { action, email, password, name } = req.body;
 
     switch (action) {
-      case 'login':
+      case 'login': {
         const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
           email,
           password
@@ -41,8 +41,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           user: loginData.user,
           session: loginData.session
         });
+      }
 
-      case 'register':
+      case 'register': {
         const { data: registerData, error: registerError } = await supabase.auth.signUp({
           email,
           password,
@@ -66,8 +67,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           session: registerData.session,
           message: 'Registration successful'
         });
+      }
 
-      case 'logout':
+      case 'logout': {
         const { error: logoutError } = await supabase.auth.signOut();
         
         if (logoutError) {
@@ -81,12 +83,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           success: true,
           message: 'Logged out successfully'
         });
+      }
 
-      default:
+      default: {
         return res.status(400).json({
           success: false,
           error: 'Invalid action'
         });
+      }
     }
   } catch (error) {
     console.error('Auth error:', error);
