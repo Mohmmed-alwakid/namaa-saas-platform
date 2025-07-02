@@ -8,6 +8,7 @@ import HomePage from './client/pages/HomePage';
 import LoginPage from './client/pages/LoginPage';
 import NotFoundPage from './client/pages/NotFoundPage';
 import PortfoliosPage from './client/pages/PortfoliosPage';
+import RegisterPage from './client/pages/RegisterPage';
 import StocksPage from './client/pages/StocksPage';
 
 // Import layout components
@@ -33,6 +34,7 @@ function App() {
               {/* Public routes */}
               <Route path="/" element={<HomePage />} />
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
               
               {/* Protected routes */}
               <Route path="/dashboard" element={<DashboardPage />} />
